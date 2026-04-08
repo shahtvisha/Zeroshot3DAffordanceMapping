@@ -1,0 +1,16 @@
+zeroshot3d/
+venv/
+env/
+.venv/
+data/
+models/
+results/
+*.pkl
+*.npy
+*.pt
+*.pth
+*.h5
+*.dylib
+__pycache__/
+*.pyc
+.DS_Store
