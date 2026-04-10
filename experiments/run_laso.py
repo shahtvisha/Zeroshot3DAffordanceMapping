@@ -8,12 +8,12 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from zeroshot3d.features import (
+from src.features import (
     generate_synthetic_features,
     generate_synthetic_text_embedding,
     compute_text_similarity,
 )
-from zeroshot3d.geometry import (
+from src.geometry import (
     compute_local_geometry,
     geometric_prior_score,
     fuse_scores,

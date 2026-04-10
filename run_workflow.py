@@ -7,8 +7,8 @@ def run_command(cmd: str):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--affordance", default="grasp",
-                        help="Which affordance to evaluate (default: grasp)")
+    parser.add_argument("--affordance", default="pour",
+                        help="Which affordance to evaluate (default: pour)")
     parser.add_argument("--n_objects", type=int, default=20,
                         help="Number of objects for PR curves and ablation")
     parser.add_argument("--figures", default="all",
@@ -20,7 +20,7 @@ if __name__ == "__main__":
     run_command(f"python experiments/run_laso.py --affordance {args.affordance}")
 
     # Step 2: Run ablation
-    run_command(f"python experiments/ablation.py --affordances {args.affordance} --n_objects {args.n_objects}")
+    run_command(f"python experiments/ablation.py --affordances {args.affordance}")
 
     # Step 3: Generate figures
-    run_command(f"python experiments/make_figures.py --figure {args.figures} --affordance {args.affordance} --n-objects {args.n_objects}")
+    run_command(f"python experiments/make_figures.py --figure {args.figures} --affordance {args.affordance}")

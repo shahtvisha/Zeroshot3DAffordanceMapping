@@ -330,7 +330,7 @@ def clip_score_pointcloud(
 if __name__ == "__main__":
     import sys
     sys.path.insert(0, str(Path(__file__).parent.parent))
-    from zeroshot3d.pointcloud import generate_synthetic_scene, voxel_downsample
+    from src.pointcloud import generate_synthetic_scene, voxel_downsample
 
     print("Day 2 test: synthetic feature lifting...")
 
@@ -349,7 +349,7 @@ if __name__ == "__main__":
             int(len(col_down)**0.5), -1, 3
         )[:224, :224]  
 
-        from zeroshot3d.features import CameraIntrinsics
+        from src.features import CameraIntrinsics
         intrinsics = CameraIntrinsics()
         scores_real = clip_score_pointcloud(
             pts_down[:224*224], fake_image, intrinsics,

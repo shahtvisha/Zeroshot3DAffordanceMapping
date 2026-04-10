@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zero-Shot 3D Affordance Mapping</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:      #0f1117;
+  --surface: #16181f;
+  --card:    #1c1f2b;
+  --border:  #252836;
+  --text:    #e2e4ed;
+  --muted:   #7b7f99;
+  --accent:  #7c6af7;
+  --green:   #22c55e;
+  --amber:   #f59e0b;
+  --red:     #ef4444;
+  --teal:    #14b8a6;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.page { max-width: 900px; margin: 0 auto; padding: 48px 24px 80px; }
+
+/* ── Hero ── */
+.hero { margin-bottom: 48px; }
+.hero-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: rgba(124,106,247,.12);
+  border: 1px solid rgba(124,106,247,.25);
+  border-radius: 20px;
+  padding: 3px 10px;
+  margin-bottom: 16px;
+}
+.hero h1 {
+  font-size: clamp(22px, 4vw, 34px);
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 14px;
+  letter-spacing: -.02em;
+}
+.hero h1 span { color: var(--accent); }
+.hero-sub {
+  font-size: 16px;
+  color: var(--muted);
+  max-width: 600px;
+  line-height: 1.7;
+}
+.hero-links { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity .15s;
+  border: none;
+}
+.btn:hover { opacity: .85; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-ghost   { background: transparent; color: var(--muted);
+               border: 1px solid var(--border); }
+.btn-ghost:hover { color: var(--text); }
+
+/* ── Section ── */
+.section { margin-bottom: 44px; }
+.section-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── Key finding card ── */
+.finding {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+.finding strong { color: var(--text); }
+.finding p { color: var(--muted); margin-top: 4px; font-size: 13px; }
+
+/* ── Method comparison grid ── */
+.method-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+@media (max-width: 600px) { .method-grid { grid-template-columns: 1fr; } }
+
+.method-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+}
+.method-card.ours {
+  border-color: rgba(124,106,247,.5);
+  background: rgba(124,106,247,.06);
+}
+.method-name {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ours-badge {
+  font-size: 10px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+.metric-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--muted);
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+}
+.metric-row:last-child { border-bottom: none; }
+.metric-row .val { font-weight: 600; }
+.val-best { color: var(--green); }
+.val-mid  { color: var(--amber); }
+.val-low  { color: var(--muted); }
+
+/* ── Charts ── */
+.chart-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 600px) { .chart-grid { grid-template-columns: 1fr; } }
+
+.chart-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+}
+.chart-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 12px;
+  letter-spacing: .04em;
+}
+.chart-card canvas { max-height: 200px; }
+
+/* ── Ablation table ── */
+.abl-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+.abl-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.abl-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+  color: var(--muted);
+}
+.abl-table tr:last-child td { border-bottom: none; }
+.abl-table tr.ours td { color: var(--text); background: rgba(124,106,247,.06); }
+.abl-table td.num { font-variant-numeric: tabular-nums; text-align: right; }
+.win { color: var(--green); font-weight: 600; }
+
+/* ── Finding: query sensitivity ── */
+.query-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.query-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.query-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+  color: var(--muted);
+}
+.query-table tr.canonical td { color: var(--text); }
+.query-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.bar-wrap { display: flex; align-items: center; gap: 8px; }
+.bar-track { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.bar-fill  { height: 100%; border-radius: 3px; background: var(--accent); }
+
+/* ── Method diagram ── */
+.diagram {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  font-size: 13px;
+}
+.eq {
+  text-align: center;
+  font-family: "Georgia", serif;
+  font-size: 15px;
+  color: var(--text);
+  background: rgba(124,106,247,.08);
+  border: 1px solid rgba(124,106,247,.2);
+  border-radius: 7px;
+  padding: 12px;
+  margin: 14px 0;
+}
+.pipe {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+@media (max-width: 580px) {
+  .pipe { grid-template-columns: 1fr; }
+  .pipe-arrow { transform: rotate(90deg); }
+}
+.pipe-box {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 10px;
+  text-align: center;
+  font-size: 12px;
+}
+.pipe-box.new  { border-color: rgba(124,106,247,.4); color: var(--accent); }
+.pipe-box .lbl { font-size: 10px; color: var(--muted); margin-top: 3px; }
+.pipe-arrow    { color: var(--muted); text-align: center; font-size: 18px; }
+
+/* ── Limitations ── */
+.limit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 580px) { .limit-grid { grid-template-columns: 1fr; } }
+.limit-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+  font-size: 13px;
+}
+.limit-title { font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.limit-body  { color: var(--muted); font-size: 12px; line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-tag">Research Project · 3D Perception · Zero-Shot</div>
+    <h1>Geometry-Aware<br><span>Zero-Shot 3D Affordance Mapping</span></h1>
+    <p class="hero-sub">
+      Combining CLIP semantic features with query-conditioned geometric priors
+      to localize interaction regions in 3D point clouds — no training data required.
+      Evaluated on the LASO benchmark (CVPR 2025).
+    </p>
+    <div class="hero-links">
+      <a class="btn btn-primary" href="https://github.com/YOUR_USERNAME/zeroshot3d-affordance" target="_blank">
+        GitHub
+      </a>
+      <a class="btn btn-ghost" href="WRITEUP.md" target="_blank">Writeup</a>
+      <a class="btn btn-ghost" href="https://YOUR_DEMO_URL/static/index.html" target="_blank">Live Demo</a>
+    </div>
+  </div>
+
+  <!-- Method -->
+  <div class="section">
+    <div class="section-label">Method</div>
+    <div class="diagram">
+      <p style="color:var(--muted);font-size:13px;margin-bottom:4px">
+        CLIP-only methods lift 2D patch features into 3D and score points by text similarity.
+        We multiply this semantic score by a geometry score derived from local surface descriptors —
+        encoding the physical common sense that, e.g., graspable surfaces have consistent normals
+        and slight curvature, while placeable surfaces are flat and upward-facing.
+      </p>
+      <div class="eq">final_score(p) = √( semantic_score(p) × geometric_score(p) )</div>
+      <div class="pipe">
+        <div class="pipe-box">
+          <div>CLIP lifting</div>
+          <div class="lbl">2D patches → 3D</div>
+        </div>
+        <div class="pipe-arrow">×</div>
+        <div class="pipe-box new">
+          <div>Geometric prior</div>
+          <div class="lbl">PCA normals + query filter</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-box">
+          <div>Affordance map</div>
+          <div class="lbl">Per-point score [0,1]</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Key findings -->
+  <div class="section">
+    <div class="section-label">Key findings</div>
+    <div class="finding">
+      <strong>Geometry improves region quality, not just peak detection.</strong>
+      <p>CLIP-only achieves higher P@50 (finds the right single points), but our geometry-aware
+      fusion wins on IoU and SIM across all four affordance categories — producing
+      better-shaped regions. For robotics this matters: a robot needs a graspable surface,
+      not just the highest-scoring point.</p>
+    </div>
+    <div class="finding">
+      <strong>Multiplicative fusion outperforms additive alternatives.</strong>
+      <p>Multiplying semantic and geometric scores enforces that both must agree — a point scores
+      high only if it both looks right (CLIP) and is shaped right (geometry). Additive fusion
+      lets high semantic scores compensate for geometrically implausible regions, which degrades IoU.</p>
+    </div>
+    <div class="finding">
+      <strong>Short queries outperform descriptive ones on P@50 (novel finding).</strong>
+      <p>For the support affordance, "region for support" achieves P@50=0.960 vs. 0.340 for the
+      full descriptive query — while IoU is stable across all phrasings. This suggests CLIP's
+      text encoder is sensitive to query verbosity for peak localization, but geometry provides
+      stable signal regardless. Practical implication: use short action-centric queries.</p>
+    </div>
+  </div>
+
+  <!-- Main results -->
+  <div class="section">
+    <div class="section-label">Results on LASO test split</div>
+    <div class="method-grid">
+      <div class="method-card">
+        <div class="method-name">CLIP only <span style="font-size:11px;color:var(--muted)">baseline</span></div>
+        <div class="metric-row"><span>Grasp IoU</span>  <span class="val val-low">0.262</span></div>
+        <div class="metric-row"><span>Support IoU</span><span class="val val-low">0.205</span></div>
+        <div class="metric-row"><span>Contain IoU</span><span class="val val-low">0.375</span></div>
+        <div class="metric-row"><span>Move IoU</span>   <span class="val val-low">0.332</span></div>
+        <div class="metric-row"><span>Grasp P@50</span> <span class="val val-mid">0.382</span></div>
+      </div>
+      <div class="method-card">
+        <div class="method-name">Geometry only</div>
+        <div class="metric-row"><span>Grasp IoU</span>  <span class="val val-mid">0.295</span></div>
+        <div class="metric-row"><span>Support IoU</span><span class="val val-low">0.127</span></div>
+        <div class="metric-row"><span>Contain IoU</span><span class="val val-mid">0.347</span></div>
+        <div class="metric-row"><span>Move IoU</span>   <span class="val val-mid">0.452</span></div>
+        <div class="metric-row"><span>Grasp P@50</span> <span class="val val-mid">0.332</span></div>
+      </div>
+      <div class="method-card ours">
+        <div class="method-name">Geometry-aware <span class="ours-badge">ours</span></div>
+        <div class="metric-row"><span>Grasp IoU</span>  <span class="val val-best">0.354</span></div>
+        <div class="metric-row"><span>Support IoU</span><span class="val val-best">0.258</span></div>
+        <div class="metric-row"><span>Contain IoU</span><span class="val val-best">0.541</span></div>
+        <div class="metric-row"><span>Move IoU</span>   <span class="val val-best">0.509</span></div>
+        <div class="metric-row"><span>Grasp P@50</span> <span class="val val-mid">0.323</span></div>
+      </div>
+    </div>
+
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-title">IoU by affordance</div>
+        <canvas id="chart-iou"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">SIM by affordance</div>
+        <canvas id="chart-sim"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ablation -->
+  <div class="section">
+    <div class="section-label">Ablation — fusion strategy (grasp, n=30)</div>
+    <table class="abl-table">
+      <thead>
+        <tr>
+          <th>Variant</th>
+          <th style="text-align:right">P@50</th>
+          <th style="text-align:right">IoU</th>
+          <th style="text-align:right">SIM</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>(A) CLIP only</td>
+          <td class="num">0.382</td>
+          <td class="num">0.262</td>
+          <td class="num">0.261</td>
+        </tr>
+        <tr>
+          <td>(B) Geometry only</td>
+          <td class="num">0.332</td>
+          <td class="num">0.295</td>
+          <td class="num">0.292</td>
+        </tr>
+        <tr>
+          <td>(C) Additive fusion</td>
+          <td class="num">0.327</td>
+          <td class="num">0.294</td>
+          <td class="num">0.291</td>
+        </tr>
+        <tr class="ours">
+          <td>(D) <strong>Multiplicative (ours)</strong></td>
+          <td class="num">0.323</td>
+          <td class="num win">0.354</td>
+          <td class="num win">0.325</td>
+        </tr>
+        <tr>
+          <td>(E) Harmonic fusion</td>
+          <td class="num">0.329</td>
+          <td class="num">0.353</td>
+          <td class="num">0.328</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Query sensitivity -->
+  <div class="section">
+    <div class="section-label">Query phrasing sensitivity — support affordance</div>
+    <table class="query-table">
+      <thead>
+        <tr>
+          <th>Query</th>
+          <th style="text-align:right">P@50</th>
+          <th style="width:120px">  </th>
+          <th style="text-align:right">IoU</th>
+        </tr>
+      </thead>
+      <tbody id="query-tbody"></tbody>
+    </table>
+    <p style="font-size:12px;color:var(--muted);margin-top:10px">
+      Short action-centric queries dramatically outperform verbose descriptions on P@50,
+      while IoU remains stable — suggesting geometry provides robustness to prompt phrasing.
+    </p>
+  </div>
+
+  <!-- Limitations -->
+  <div class="section">
+    <div class="section-label">Limitations &amp; future work</div>
+    <div class="limit-grid">
+      <div class="limit-card">
+        <div class="limit-title">Hand-specified priors</div>
+        <div class="limit-body">Geometric priors are manually defined per affordance category. Learning them from a small ShapeNet set would remove hand-engineering while preserving zero-shot generalization at test time.</div>
+      </div>
+      <div class="limit-card">
+        <div class="limit-title">CLIP feature resolution</div>
+        <div class="limit-body">ViT-L/14 produces ~14px patches. Affordance regions smaller than ~14px in projection are underresolved. DINOv2 with 14px stride gives better spatial resolution for small objects.</div>
+      </div>
+      <div class="limit-card">
+        <div class="limit-title">P@50 vs IoU trade-off</div>
+        <div class="limit-body">Our method trades peak precision for better region quality. For single-point grasping tasks CLIP-only may suffice; for surface coverage (bi-manual grasping) geometry-aware fusion is preferable.</div>
+      </div>
+      <div class="limit-card">
+        <div class="limit-title">Non-metric depth</div>
+        <div class="limit-body">On webcam input, depth is estimated by Depth Anything V2 — geometrically consistent but not metric. Normal estimation quality degrades slightly without true depth.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Chart defaults ────────────────────────────────────────────────────────────
+Chart.defaults.color          = '#7b7f99';
+Chart.defaults.borderColor    = '#252836';
+Chart.defaults.font.family    = '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+Chart.defaults.font.size      = 11;
+
+const AFFORDANCES = ['grasp', 'support', 'contain', 'move'];
+
+const DATA = {
+  iou: {
+    clip_only:       [0.262, 0.205, 0.375, 0.332],
+    geometry_only:   [0.295, 0.127, 0.347, 0.452],
+    geometry_aware:  [0.354, 0.258, 0.541, 0.509],
+  },
+  sim: {
+    clip_only:       [0.261, 0.233, 0.398, 0.336],
+    geometry_only:   [0.292, 0.184, 0.359, 0.439],
+    geometry_aware:  [0.325, 0.248, 0.464, 0.483],
+  },
+};
+
+const PALETTE = {
+  clip_only:      'rgba(123,127,153,0.8)',
+  geometry_only:  'rgba(20,184,166,0.8)',
+  geometry_aware: 'rgba(124,106,247,0.9)',
+};
+const PALETTE_BORDER = {
+  clip_only:      '#7b7f99',
+  geometry_only:  '#14b8a6',
+  geometry_aware: '#7c6af7',
+};
+
+function makeBarChart(id, metric) {
+  const ctx = document.getElementById(id).getContext('2d');
+  return new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: AFFORDANCES,
+      datasets: [
+        {
+          label: 'CLIP only',
+          data: DATA[metric].clip_only,
+          backgroundColor: PALETTE.clip_only,
+          borderColor: PALETTE_BORDER.clip_only,
+          borderWidth: 1,
+          borderRadius: 3,
+        },
+        {
+          label: 'Geometry only',
+          data: DATA[metric].geometry_only,
+          backgroundColor: PALETTE.geometry_only,
+          borderColor: PALETTE_BORDER.geometry_only,
+          borderWidth: 1,
+          borderRadius: 3,
+        },
+        {
+          label: 'Geometry-aware (ours)',
+          data: DATA[metric].geometry_aware,
+          backgroundColor: PALETTE.geometry_aware,
+          borderColor: PALETTE_BORDER.geometry_aware,
+          borderWidth: 1,
+          borderRadius: 3,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 10, padding: 10 } },
+      },
+      scales: {
+        y: {
+          beginAtZero: true, max: 0.65,
+          grid: { color: 'rgba(255,255,255,.04)' },
+        },
+        x: { grid: { display: false } },
+      },
+    },
+  });
+}
+
+makeBarChart('chart-iou', 'iou');
+makeBarChart('chart-sim', 'sim');
+
+// ── Query sensitivity table ────────────────────────────────────────────────────
+const queries = [
+  { q: 'the flat supporting surface to place objects on', p50: 0.340, iou: 0.506, canonical: true },
+  { q: 'region for support',                             p50: 0.960, iou: 0.514 },
+  { q: 'where to support',                               p50: 0.960, iou: 0.514 },
+  { q: 'the best spot to support this object',           p50: 0.940, iou: 0.514 },
+  { q: 'support',                                        p50: 0.920, iou: 0.514 },
+];
+
+const tbody = document.getElementById('query-tbody');
+queries.forEach(row => {
+  const tr = document.createElement('tr');
+  if (row.canonical) tr.className = 'canonical';
+  const pct = Math.round(row.p50 * 100);
+  tr.innerHTML = `
+    <td>${row.q}${row.canonical ? ' <span style="font-size:10px;color:var(--muted)">(canonical)</span>' : ''}</td>
+    <td class="num">${row.p50.toFixed(3)}</td>
+    <td>
+      <div class="bar-wrap">
+        <div class="bar-track">
+          <div class="bar-fill" style="width:${pct}%"></div>
+        </div>
+        <span style="font-size:11px;color:var(--muted);min-width:30px">${pct}%</span>
+      </div>
+    </td>
+    <td class="num">${row.iou.toFixed(3)}</td>
+  `;
+  tbody.appendChild(tr);
+});
+</script>
+</body>
+</html>

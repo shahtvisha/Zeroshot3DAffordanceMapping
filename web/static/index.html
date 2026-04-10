@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zero-Shot 3D Affordance Mapping</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #0d0f18;
+  --surface: #13151f;
+  --card:    #1a1d2b;
+  --border:  #252838;
+  --text:    #e4e6f0;
+  --muted:   #7a7e9a;
+  --accent:  #7c6af7;
+  --green:   #22c55e;
+  --amber:   #f59e0b;
+  --red:     #ef4444;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ── Header ── */
+header {
+  border-bottom: 1px solid var(--border);
+  padding: 16px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.hdr-left h1 { font-size: 16px; font-weight: 600; }
+.hdr-left p  { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.hdr-links   { display: flex; gap: 8px; }
+.hdr-links a {
+  font-size: 12px; color: var(--muted); text-decoration: none;
+  padding: 5px 12px; border: 1px solid var(--border); border-radius: 6px;
+  transition: color .15s, border-color .15s;
+}
+.hdr-links a:hover { color: var(--text); border-color: var(--muted); }
+
+/* ── Main layout ── */
+main {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+  display: grid;
+  grid-template-columns: 290px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 740px) { main { grid-template-columns: 1fr; } }
+
+/* ── Panel ── */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+}
+.panel + .panel { margin-top: 14px; }
+.panel-label {
+  font-size: 10px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 14px;
+}
+
+/* ── Scene buttons — clean text only, no icons ── */
+.scene-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 16px; }
+.scene-btn {
+  padding: 9px 4px; background: var(--card); color: var(--muted);
+  border: 1px solid var(--border); border-radius: 7px;
+  font-size: 13px; font-weight: 500; cursor: pointer;
+  text-align: center; transition: all .15s; letter-spacing: .01em;
+}
+.scene-btn:hover  { color: var(--text); border-color: #444; }
+.scene-btn.active { color: var(--accent); border-color: var(--accent); background: rgba(124,106,247,.1); }
+
+/* ── Form ── */
+.field-label { font-size: 11px; color: var(--muted); margin-bottom: 5px; display: block; }
+
+select {
+  width: 100%; padding: 8px 28px 8px 10px;
+  background: var(--card); color: var(--text);
+  border: 1px solid var(--border); border-radius: 7px;
+  font-size: 13px; margin-bottom: 14px; outline: none; cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%237a7e9a' d='M5 7L0 2h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+select:focus { border-color: var(--accent); }
+
+/* ── Method cards ── */
+.method-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.method-card {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 12px; background: var(--card);
+  border: 1px solid var(--border); border-radius: 8px;
+  cursor: pointer; transition: border-color .15s;
+}
+.method-card:has(input:checked) { border-color: var(--accent); background: rgba(124,106,247,.08); }
+.method-card input { accent-color: var(--accent); margin-top: 2px; flex-shrink: 0; }
+.method-name { font-size: 13px; font-weight: 500; line-height: 1.3; }
+.method-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* ── Run button ── */
+.run-btn {
+  width: 100%; padding: 11px; background: var(--accent); color: #fff;
+  border: none; border-radius: 8px; font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: opacity .15s, transform .1s;
+}
+.run-btn:hover    { opacity: .9; }
+.run-btn:active   { transform: scale(.98); }
+.run-btn:disabled { opacity: .35; cursor: not-allowed; transform: none; }
+
+/* ── Status ── */
+#status {
+  font-size: 12px; color: var(--muted);
+  margin-top: 10px; min-height: 18px; text-align: center;
+}
+#status.ok      { color: var(--green); }
+#status.error   { color: var(--red); }
+#status.loading { color: var(--amber); }
+
+/* ── Metrics ── */
+.metrics { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-top: 14px; }
+.metric {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 12px;
+}
+.metric-val  { font-size: 18px; font-weight: 700; color: var(--accent); line-height: 1; }
+.metric-name { font-size: 10px; color: var(--muted); margin-top: 4px; }
+
+/* ── Upload ── */
+input[type=file] {
+  width: 100%; padding: 8px 10px;
+  background: var(--card); color: var(--muted);
+  border: 1px dashed var(--border); border-radius: 7px;
+  font-size: 12px; cursor: pointer;
+}
+input[type=file]:hover { border-color: var(--muted); }
+
+/* ── Right column ── */
+.right-col { display: flex; flex-direction: column; gap: 16px; }
+
+/* ── Viewer ── */
+.viewer-wrap {
+  position: relative; background: #080a12;
+  border: 1px solid var(--border); border-radius: 12px;
+  overflow: hidden; aspect-ratio: 16/10; min-height: 340px;
+}
+/* touch-action:none prevents mobile page-scroll; scroll is handled in JS with preventDefault */
+#canvas3d {
+  width: 100%; height: 100%; display: block;
+  touch-action: none;
+  overscroll-behavior: contain;
+}
+
+.viewer-tag {
+  position: absolute; top: 12px; left: 12px;
+  background: rgba(8,10,18,.85); border: 1px solid var(--border);
+  border-radius: 6px; padding: 5px 10px; font-size: 12px; color: var(--muted);
+  pointer-events: none; display: flex; align-items: center; gap: 6px;
+}
+.viewer-tag .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+
+.viewer-hint {
+  position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+  background: rgba(8,10,18,.82); border: 1px solid var(--border);
+  border-radius: 20px; padding: 5px 14px; font-size: 11px; color: var(--muted);
+  pointer-events: none; white-space: nowrap; transition: opacity .6s;
+}
+
+/* ── Colorbar — expanded with readable labels ── */
+.colorbar {
+  position: absolute; bottom: 14px; right: 14px;
+  display: flex; align-items: flex-end; gap: 8px; pointer-events: none;
+}
+.colorbar-side {
+  display: flex; flex-direction: column;
+  justify-content: space-between; height: 110px;
+  text-align: right; gap: 0;
+}
+.colorbar-side .cb-label {
+  font-size: 10px; color: var(--muted); line-height: 1;
+  display: flex; align-items: center; gap: 5px; justify-content: flex-end;
+}
+.colorbar-side .cb-label .cb-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+}
+.colorbar-title {
+  position: absolute; bottom: 128px; right: 14px;
+  font-size: 10px; font-weight: 600; color: rgba(228,230,240,.55);
+  letter-spacing: .06em; text-transform: uppercase;
+  pointer-events: none;
+}
+.colorbar-track {
+  width: 14px; height: 110px; border-radius: 7px;
+  border: 1px solid rgba(255,255,255,.1);
+  background: linear-gradient(to top,
+    #0d0887 0%,#5302a3 20%,#8b0aa5 35%,
+    #b83289 50%,#db5c68 65%,#f48849 80%,
+    #febd2a 92%,#f0f921 100%);
+}
+
+/* ── Affordance result explanation ── */
+.afford-explain {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 16px;
+  display: none;
+}
+.afford-explain-label {
+  font-size: 10px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 7px;
+}
+.afford-explain-text {
+  font-size: 13px; color: var(--text); line-height: 1.7;
+}
+.afford-explain-text .hi { color: #f0f921; font-weight: 600; }
+.afford-explain-text .lo { color: #9b82f7; font-weight: 600; }
+.afford-explain-meta {
+  margin-top: 10px; padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 11px; color: var(--muted);
+  display: flex; gap: 20px; flex-wrap: wrap;
+}
+.afford-explain-meta strong { color: var(--text); }
+
+/* ── Comparison ── */
+.cmp-label {
+  font-size: 10px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--muted);
+  margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.cmp-label span { font-weight: 400; text-transform: none; letter-spacing: 0; font-size: 11px; }
+
+.cmp-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+.cmp-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 9px; overflow: hidden;
+}
+.cmp-card.ours { border-color: rgba(124,106,247,.5); }
+.cmp-card canvas { width: 100%; aspect-ratio: 1; display: block; }
+.cmp-card-label {
+  padding: 7px 10px; font-size: 11px; color: var(--muted);
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.cmp-card.ours .cmp-card-label { color: var(--accent); }
+.cmp-badge {
+  font-size: 9px; background: var(--accent); color: #fff;
+  border-radius: 4px; padding: 1px 5px; font-weight: 600;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr-left">
+    <h1>Zero-Shot 3D Affordance Mapping</h1>
+    <p>Geometry-aware &nbsp;·&nbsp; No training required &nbsp;·&nbsp; Evaluated on LASO benchmark</p>
+  </div>
+  <div class="hdr-links">
+    <a href="https://github.com/YOUR_USERNAME/zeroshot3d-affordance" target="_blank">GitHub</a>
+    <a href="/static/portfolio.html">Results</a>
+    <a href="/docs" target="_blank">API</a>
+  </div>
+</header>
+
+<main>
+
+  <!-- Left controls -->
+  <div>
+    <div class="panel">
+      <div class="panel-label">Scene</div>
+
+      <span class="field-label">Preloaded scene</span>
+      <div class="scene-grid">
+        <button class="scene-btn active" data-scene="mug">Mug</button>
+        <button class="scene-btn"        data-scene="chair">Chair</button>
+        <button class="scene-btn"        data-scene="bottle">Bottle</button>
+        <button class="scene-btn"        data-scene="table">Table</button>
+      </div>
+
+      <span class="field-label">Affordance query</span>
+      <select id="affordance-select">
+        <option value="grasp">grasp — pick up with fingers</option>
+        <option value="support">support — flat surface to place on</option>
+        <option value="contain">contain — hold objects inside</option>
+        <option value="wrap-grasp">wrap-grasp — full hand around</option>
+        <option value="open">open — pull or rotate open</option>
+        <option value="pour">pour — pour liquid out</option>
+        <option value="move">move — push or drag</option>
+        <option value="sit">sit — sit on surface</option>
+      </select>
+
+      <span class="field-label">Method</span>
+      <div class="method-group">
+        <label class="method-card">
+          <input type="radio" name="method" value="clip_only">
+          <div>
+            <div class="method-name">CLIP only</div>
+            <div class="method-desc">Baseline — 2D semantic features lifted into 3D</div>
+          </div>
+        </label>
+        <label class="method-card">
+          <input type="radio" name="method" value="geometry_only">
+          <div>
+            <div class="method-name">Geometry only</div>
+            <div class="method-desc">Surface normals + query-conditioned priors</div>
+          </div>
+        </label>
+        <label class="method-card">
+          <input type="radio" name="method" value="geometry_aware" checked>
+          <div>
+            <div class="method-name">Geometry-aware &nbsp;◀ ours</div>
+            <div class="method-desc">CLIP × geometric prior — best IoU on LASO</div>
+          </div>
+        </label>
+      </div>
+
+      <button class="run-btn" id="run-btn">Run Affordance Map</button>
+      <div id="status"></div>
+
+      <div class="metrics">
+        <div class="metric">
+          <div class="metric-val" id="m-npoints">—</div>
+          <div class="metric-name">Points</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val" id="m-ntop">—</div>
+          <div class="metric-name">High-score</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val" id="m-elapsed">—</div>
+          <div class="metric-name">Time</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-label">Upload your own</div>
+      <span class="field-label">Point cloud (.npy, .ply, or .pkl)</span>
+      <input type="file" id="upload-input" accept=".npy,.pkl,.ply">
+    </div>
+  </div>
+
+  <!-- Right: viewer + explanation + comparison -->
+  <div class="right-col">
+
+    <div class="viewer-wrap">
+      <canvas id="canvas3d"></canvas>
+
+      <div class="viewer-tag">
+        <div class="dot"></div>
+        <span id="viewer-label">Loading…</span>
+      </div>
+
+      <div class="viewer-hint" id="hint">Drag to rotate &nbsp;·&nbsp; Scroll to zoom &nbsp;·&nbsp; Right-drag to pan</div>
+
+      <!-- Colorbar with human-readable labels -->
+      <div class="colorbar-title">Affordance score</div>
+      <div class="colorbar">
+        <div class="colorbar-side">
+          <div class="cb-label">
+            <span>Best match</span>
+            <div class="cb-dot" style="background:#f0f921;"></div>
+          </div>
+          <div class="cb-label" style="opacity:.5">
+            <span>Moderate</span>
+            <div class="cb-dot" style="background:#db5c68;"></div>
+          </div>
+          <div class="cb-label">
+            <span>No match</span>
+            <div class="cb-dot" style="background:#0d0887;"></div>
+          </div>
+        </div>
+        <div class="colorbar-track"></div>
+      </div>
+    </div>
+
+    <!-- Plain-English explanation — appears after each run -->
+    <div class="afford-explain" id="afford-explain">
+      <div class="afford-explain-label">What you're seeing</div>
+      <div class="afford-explain-text" id="afford-explain-text"></div>
+      <div class="afford-explain-meta" id="afford-explain-meta"></div>
+    </div>
+
+    <div>
+      <div class="cmp-label">
+        Method comparison — top-down view
+        <span>Same scene · same query</span>
+      </div>
+      <div class="cmp-grid">
+        <div class="cmp-card">
+          <canvas id="cmp-clip" width="240" height="240"></canvas>
+          <div class="cmp-card-label">CLIP only</div>
+        </div>
+        <div class="cmp-card">
+          <canvas id="cmp-geo" width="240" height="240"></canvas>
+          <div class="cmp-card-label">Geometry only</div>
+        </div>
+        <div class="cmp-card ours">
+          <canvas id="cmp-ours" width="240" height="240"></canvas>
+          <div class="cmp-card-label">
+            Geometry-aware
+            <span class="cmp-badge">ours</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+const API = '';
+let currentScene = 'mug';
+let currentData  = null;
+
+// ── Viridis colormap ──────────────────────────────────────────────────────────
+function viridisColor(t) {
+  t = Math.max(0, Math.min(1, t));
+  const stops = [
+    [0.267, 0.005, 0.329],
+    [0.283, 0.301, 0.557],
+    [0.128, 0.566, 0.551],
+    [0.478, 0.821, 0.318],
+    [0.993, 0.906, 0.144],
+  ];
+  const s  = t * (stops.length - 1);
+  const lo = Math.floor(s), hi = Math.min(lo + 1, stops.length - 1);
+  const f  = s - lo;
+  const a  = stops[lo], b = stops[hi];
+  return [a[0]+(b[0]-a[0])*f, a[1]+(b[1]-a[1])*f, a[2]+(b[2]-a[2])*f];
+}
+
+// ── Three.js ──────────────────────────────────────────────────────────────────
+const canvas3d = document.getElementById('canvas3d');
+const renderer = new THREE.WebGLRenderer({ canvas: canvas3d, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+const scene3 = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(42, 1, 0.001, 100);
+scene3.add(new THREE.AmbientLight(0xffffff, 0.5));
+const dLight = new THREE.DirectionalLight(0xffffff, 0.6);
+dLight.position.set(1, 2, 1.5);
+scene3.add(dLight);
+
+let cloud = null;
+let sph   = { theta: 0.5, phi: 1.05, r: 1.4 };
+
+function resizeRenderer() {
+  const w = canvas3d.clientWidth, h = canvas3d.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+resizeRenderer();
+new ResizeObserver(resizeRenderer).observe(canvas3d);
+
+(function loop() {
+  requestAnimationFrame(loop);
+  camera.position.set(
+    sph.r * Math.sin(sph.phi) * Math.sin(sph.theta),
+    sph.r * Math.cos(sph.phi),
+    sph.r * Math.sin(sph.phi) * Math.cos(sph.theta),
+  );
+  camera.lookAt(0, 0, 0);
+  renderer.render(scene3, camera);
+})();
+
+// ── Orbit controls ────────────────────────────────────────────────────────────
+let dragging = false, lastMouse = { x: 0, y: 0 };
+
+canvas3d.addEventListener('mousedown', e => {
+  dragging = true; lastMouse = { x: e.clientX, y: e.clientY }; dismissHint();
+});
+window.addEventListener('mouseup', () => dragging = false);
+canvas3d.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  sph.theta -= (e.clientX - lastMouse.x) * 0.007;
+  sph.phi    = Math.max(0.1, Math.min(Math.PI - 0.1, sph.phi + (e.clientY - lastMouse.y) * 0.007));
+  lastMouse  = { x: e.clientX, y: e.clientY };
+});
+
+// KEY FIX: passive:false + preventDefault stops Safari from interpreting
+// the scroll as a swipe between tabs or triggering overscroll navigation.
+canvas3d.addEventListener('wheel', e => {
+  e.preventDefault();
+  e.stopPropagation();
+  sph.r = Math.max(0.4, Math.min(4, sph.r + e.deltaY * 0.0008));
+}, { passive: false });
+
+let lTouch = null, lastPinchDist = null;
+canvas3d.addEventListener('touchstart', e => {
+  lTouch = e.touches[0]; lastPinchDist = null; dismissHint();
+  e.preventDefault();
+}, { passive: false });
+canvas3d.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (e.touches.length === 2) {
+    const d = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    if (lastPinchDist !== null) sph.r = Math.max(0.4, Math.min(4, sph.r - (d - lastPinchDist) * 0.005));
+    lastPinchDist = d;
+    lTouch = null;
+  } else if (lTouch && e.touches.length === 1) {
+    sph.theta -= (e.touches[0].clientX - lTouch.clientX) * 0.01;
+    sph.phi    = Math.max(0.1, Math.min(Math.PI - 0.1, sph.phi + (e.touches[0].clientY - lTouch.clientY) * 0.01));
+    lTouch = e.touches[0];
+  }
+}, { passive: false });
+
+// ── Hint ──────────────────────────────────────────────────────────────────────
+const hintEl = document.getElementById('hint');
+let hintTimer = null;
+function showHint()    { hintEl.style.opacity = '1'; clearTimeout(hintTimer); hintTimer = setTimeout(dismissHint, 3000); }
+function dismissHint() { hintEl.style.opacity = '0'; }
+
+// ── Build 3D point cloud ──────────────────────────────────────────────────────
+function buildCloud(pts, cols, scores) {
+  if (cloud) scene3.remove(cloud);
+
+  const N   = pts.length;
+  const pos = new Float32Array(N * 3);
+  const col = new Float32Array(N * 3);
+
+  let cx = 0, cy = 0, cz = 0;
+  for (let i = 0; i < N; i++) { cx += pts[i][0]; cy += pts[i][1]; cz += pts[i][2]; }
+  cx /= N; cy /= N; cz /= N;
+
+  let maxD = 0;
+  for (let i = 0; i < N; i++) {
+    const d = Math.sqrt((pts[i][0]-cx)**2 + (pts[i][1]-cy)**2 + (pts[i][2]-cz)**2);
+    if (d > maxD) maxD = d;
+  }
+  const sc = maxD > 0 ? 0.85 / maxD : 1;
+
+  for (let i = 0; i < N; i++) {
+    pos[i*3]   = (pts[i][0] - cx) * sc;
+    pos[i*3+1] = (pts[i][1] - cy) * sc;
+    pos[i*3+2] = (pts[i][2] - cz) * sc;
+    const [r, g, b] = scores ? viridisColor(scores[i]) : [cols[i][0], cols[i][1], cols[i][2]];
+    col[i*3] = r; col[i*3+1] = g; col[i*3+2] = b;
+  }
+
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geom.setAttribute('color',    new THREE.BufferAttribute(col, 3));
+
+  const ptSize = Math.max(0.016, Math.min(0.034, 180 / N));
+  cloud = new THREE.Points(geom, new THREE.PointsMaterial({
+    size: ptSize, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 0.93,
+  }));
+  scene3.add(cloud);
+  sph = { theta: 0.5, phi: 1.05, r: 1.4 };
+}
+
+// ── 2D top-down thumbnail ─────────────────────────────────────────────────────
+function render2D(canvasEl, pts, scores) {
+  const ctx = canvasEl.getContext('2d');
+  const W = canvasEl.width, H = canvasEl.height;
+  ctx.fillStyle = '#080a12';
+  ctx.fillRect(0, 0, W, H);
+  if (!pts || !scores) return;
+
+  const pad = 10;
+  let xmin = Infinity, xmax = -Infinity, zmin = Infinity, zmax = -Infinity;
+  for (const p of pts) {
+    if (p[0] < xmin) xmin = p[0]; if (p[0] > xmax) xmax = p[0];
+    if (p[2] < zmin) zmin = p[2]; if (p[2] > zmax) zmax = p[2];
+  }
+  const xr = xmax - xmin || 1, zr = zmax - zmin || 1;
+  const order = pts.map((_, i) => i).sort((a, b) => scores[a] - scores[b]);
+
+  for (const i of order) {
+    const px = pad + (pts[i][0] - xmin) / xr * (W - pad*2);
+    const pz = pad + (pts[i][2] - zmin) / zr * (H - pad*2);
+    const [r, g, b] = viridisColor(scores[i]);
+    const size = 1.2 + scores[i] * 2.5;
+    ctx.fillStyle = `rgb(${(r*255)|0},${(g*255)|0},${(b*255)|0})`;
+    ctx.beginPath();
+    ctx.arc(px, pz, size, 0, Math.PI*2);
+    ctx.fill();
+  }
+}
+
+// ── Per-affordance plain-English explanations ─────────────────────────────────
+const AFFORD_TEXT = {
+  grasp:
+    'The <span class="hi">bright yellow/green points</span> are where a gripper or hand can best pick up the object — typically narrow sections, handles, or regions with good surface curvature for finger contact. <span class="lo">Dark points</span> are flat, wide, or otherwise unsuitable for grasping.',
+  support:
+    'The <span class="hi">bright points</span> mark flat horizontal surfaces that can stably support other objects placed on top. <span class="lo">Dark points</span> are angled, convex, or concave regions that can\'t reliably hold anything.',
+  contain:
+    'The <span class="hi">bright points</span> highlight the interior cavity — the concave hollow designed to hold objects or liquids inside. <span class="lo">Dark points</span> are exterior surfaces.',
+  'wrap-grasp':
+    'The <span class="hi">bright points</span> identify cylindrical or rod-like sections sized for a full closed-fist grip. <span class="lo">Dark points</span> are too wide, too flat, or irregular for wrapping a hand around.',
+  open:
+    'The <span class="hi">bright points</span> locate handles, knobs, or edges you would grip to open the object — surfaces that afford pulling, rotating, or lifting. <span class="lo">Dark points</span> are non-operable body surfaces.',
+  pour:
+    'The <span class="hi">bright points</span> indicate the spout, lip, or narrow opening through which liquid can be directed when tilting. <span class="lo">Dark points</span> are base or body regions.',
+  move:
+    'The <span class="hi">bright points</span> show stable push/pull surfaces for translating the whole object across a surface. <span class="lo">Dark points</span> are fragile, concave, or impractical for pushing.',
+  sit:
+    'The <span class="hi">bright points</span> mark the seat surface — broad, flat areas designed to support a person\'s weight comfortably. <span class="lo">Dark points</span> are legs, backrests, or sharp edges.',
+};
+
+// ── Status + metrics + explanation ───────────────────────────────────────────
+function setStatus(msg, cls = '') {
+  const el = document.getElementById('status');
+  el.textContent = msg; el.className = cls;
+}
+
+function updateMetrics(data) {
+  document.getElementById('m-npoints').textContent = data.n_points?.toLocaleString() ?? '—';
+  document.getElementById('m-ntop').textContent    = data.n_top?.toLocaleString()    ?? '—';
+  document.getElementById('m-elapsed').textContent = data.elapsed_s != null ? data.elapsed_s + 's' : '—';
+}
+
+function showExplanation(data) {
+  const aff  = data.affordance;
+  const pct  = data.n_points > 0 ? ((data.n_top / data.n_points) * 100).toFixed(1) : '0.0';
+  const ml   = { clip_only: 'CLIP only', geometry_only: 'Geometry only', geometry_aware: 'Geometry-aware' };
+
+  document.getElementById('afford-explain-text').innerHTML =
+    AFFORD_TEXT[aff] ?? `<span class="hi">Bright points</span> = high affordance score for "${aff}". <span class="lo">Dark points</span> = low score.`;
+
+  document.getElementById('afford-explain-meta').innerHTML =
+    `<span><strong>${data.n_top?.toLocaleString()}</strong> of <strong>${data.n_points?.toLocaleString()}</strong> points above threshold (${pct}%)</span>`
+  + `<span>Method: <strong>${ml[data.method] ?? data.method}</strong></span>`
+  + `<span>Inference: <strong>${data.elapsed_s}s</strong></span>`;
+
+  document.getElementById('afford-explain').style.display = 'block';
+}
+
+function setLabel(sc, aff, meth) {
+  const ml = { clip_only: 'CLIP only', geometry_only: 'Geometry only', geometry_aware: 'Geometry-aware' };
+  document.getElementById('viewer-label').textContent = `${sc} · ${aff} · ${ml[meth] || meth}`;
+}
+
+// ── API ───────────────────────────────────────────────────────────────────────
+async function runScene(sc, aff, meth) {
+  setStatus('Running…', 'loading');
+  document.getElementById('run-btn').disabled = true;
+  setLabel(sc, aff, meth);
+  try {
+    const res  = await fetch(`${API}/api/sample/${sc}?affordance=${aff}&method=${meth}`);
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    currentData = data;
+    buildCloud(data.points, data.colors, data.scores);
+    updateMetrics(data);
+    showExplanation(data);
+    setStatus(`Done — ${data.n_points.toLocaleString()} points`, 'ok');
+    showHint();
+    fetchComparison(sc, aff);
+  } catch(e) {
+    setStatus(`Error: ${e.message}`, 'error');
+  } finally {
+    document.getElementById('run-btn').disabled = false;
+  }
+}
+
+async function fetchComparison(sc, aff) {
+  try {
+    const res  = await fetch(`${API}/api/compare/${sc}?affordance=${aff}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    render2D(document.getElementById('cmp-clip'),  data.points, data.clip_only?.scores);
+    render2D(document.getElementById('cmp-geo'),   data.points, data.geometry_only?.scores);
+    render2D(document.getElementById('cmp-ours'),  data.points, data.geometry_aware?.scores);
+  } catch(_) {}
+}
+
+async function runUpload(file, aff, meth) {
+  setStatus('Uploading…', 'loading');
+  document.getElementById('run-btn').disabled = true;
+  const form = new FormData();
+  form.append('file', file);
+  form.append('affordance', aff);
+  form.append('method', meth);
+  form.append('max_points', '3000');
+  try {
+    const res  = await fetch(`${API}/api/score`, { method: 'POST', body: form });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    currentData = data;
+    buildCloud(data.points, data.colors, data.scores);
+    updateMetrics(data);
+    showExplanation(data);
+    setStatus(`Done — ${data.n_points.toLocaleString()} points`, 'ok');
+    showHint();
+  } catch(e) {
+    setStatus(`Error: ${e.message}`, 'error');
+  } finally {
+    document.getElementById('run-btn').disabled = false;
+  }
+}
+
+// ── UI wiring ─────────────────────────────────────────────────────────────────
+document.querySelectorAll('.scene-btn').forEach(btn =>
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.scene-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentScene = btn.dataset.scene;
+  })
+);
+
+document.getElementById('run-btn').addEventListener('click', () => {
+  const aff  = document.getElementById('affordance-select').value;
+  const meth = document.querySelector('input[name=method]:checked').value;
+  const file = document.getElementById('upload-input').files[0];
+  file ? runUpload(file, aff, meth) : runScene(currentScene, aff, meth);
+});
+
+window.addEventListener('load', () => runScene('mug', 'grasp', 'geometry_aware'));
+</script>
+</body>
+</html>

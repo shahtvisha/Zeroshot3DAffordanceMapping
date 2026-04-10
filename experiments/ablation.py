@@ -1,25 +1,3 @@
-"""
-experiments/ablation.py
-Ablation study — the most important experiment for research credibility.
-
-An ablation study systematically removes components of your method
-to show each one contributes. Without this, a reviewer can ask
-"how do you know the geometry actually helps?"
-
-This script tests:
-  (A) CLIP-only                    — baseline, no geometry
-  (B) Geometry-only                — geometry without semantics
-  (C) Geometry-aware (add)         — additive fusion
-  (D) Geometry-aware (multiply)    — our multiplicative fusion  ← full method
-  (E) Geometry-aware (harmonic)    — harmonic mean fusion
-
-If (D) beats (A), (B), (C), and (E), your design choices are validated.
-
-Run:
-  python experiments/ablation.py
-  python experiments/ablation.py --affordances grasp place --n-objects 50
-"""
-
 import argparse
 import sys
 import json
@@ -33,12 +11,12 @@ from experiments.run_laso import (
     precision_at_k, iou, sim,
     run_clip_only, run_geometry_only,
 )
-from zeroshot3d.features import (
+from src.features import (
     generate_synthetic_features,
     generate_synthetic_text_embedding,
     compute_text_similarity,
 )
-from zeroshot3d.geometry import (
+from src.geometry import (
     compute_local_geometry,
     geometric_prior_score,
     fuse_scores,

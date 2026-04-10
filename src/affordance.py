@@ -172,7 +172,7 @@ def compute_llm_guided_scores(
     clip_model_name: str = "openai/clip-vit-large-patch14",
 ) -> np.ndarray:
 
-    from zeroshot3d.features import embed_text_clip, compute_text_similarity
+    from src.features import embed_text_clip, compute_text_similarity
 
     description = llm_result.get("affordance_description", "")
     if not description:
@@ -246,7 +246,7 @@ def zero_shot_affordance_map(
     clip_weight: float = 0.4,
     llm_weight: float = 0.6,
 ) -> dict:
-    from zeroshot3d.features import (
+    from src.features import (
         extract_clip_dense_features, embed_text_clip,
         lift_features_to_3d, compute_text_similarity,
     )
@@ -310,7 +310,7 @@ def mock_affordance_map(points: np.ndarray, colors: np.ndarray,
     Fully synthetic affordance map for pipeline wiring tests.
     Scores are based on geometry only (no models needed).
     """
-    from zeroshot3d.features import (
+    from src.features import (
         generate_synthetic_features, generate_synthetic_text_embedding,
         compute_text_similarity,
     )
@@ -336,7 +336,7 @@ def mock_affordance_map(points: np.ndarray, colors: np.ndarray,
 if __name__ == "__main__":
     import sys
     sys.path.insert(0, str(Path(__file__).parent.parent))
-    from zeroshot3d.pointcloud import generate_synthetic_scene, voxel_downsample
+    from src.pointcloud import generate_synthetic_scene, voxel_downsample
 
     print("Day 3 test: mock affordance map...")
     points, colors, labels = generate_synthetic_scene()
