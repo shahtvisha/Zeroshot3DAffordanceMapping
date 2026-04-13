@@ -73,13 +73,12 @@ main {
   text-transform: uppercase; color: var(--muted); margin-bottom: 14px;
 }
 
-/* ── Scene buttons — clean text only, no icons ── */
+/* ── Scene buttons ── */
 .scene-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 16px; }
 .scene-btn {
   padding: 9px 4px; background: var(--card); color: var(--muted);
   border: 1px solid var(--border); border-radius: 7px;
-  font-size: 13px; font-weight: 500; cursor: pointer;
-  text-align: center; transition: all .15s; letter-spacing: .01em;
+  font-size: 13px; cursor: pointer; text-align: center; transition: all .15s;
 }
 .scene-btn:hover  { color: var(--text); border-color: #444; }
 .scene-btn.active { color: var(--accent); border-color: var(--accent); background: rgba(124,106,247,.1); }
@@ -158,12 +157,7 @@ input[type=file]:hover { border-color: var(--muted); }
   border: 1px solid var(--border); border-radius: 12px;
   overflow: hidden; aspect-ratio: 16/10; min-height: 340px;
 }
-/* touch-action:none prevents mobile page-scroll; scroll is handled in JS with preventDefault */
-#canvas3d {
-  width: 100%; height: 100%; display: block;
-  touch-action: none;
-  overscroll-behavior: contain;
-}
+#canvas3d { width: 100%; height: 100%; display: block; }
 
 .viewer-tag {
   position: absolute; top: 12px; left: 12px;
@@ -174,35 +168,22 @@ input[type=file]:hover { border-color: var(--muted); }
 .viewer-tag .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
 
 .viewer-hint {
-  position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+  position: absolute; bottom: 52px; left: 50%; transform: translateX(-50%);
   background: rgba(8,10,18,.82); border: 1px solid var(--border);
   border-radius: 20px; padding: 5px 14px; font-size: 11px; color: var(--muted);
   pointer-events: none; white-space: nowrap; transition: opacity .6s;
 }
 
-/* ── Colorbar — expanded with readable labels ── */
+/* ── Colorbar ── */
 .colorbar {
   position: absolute; bottom: 14px; right: 14px;
   display: flex; align-items: flex-end; gap: 8px; pointer-events: none;
 }
-.colorbar-side {
+.colorbar-labels {
   display: flex; flex-direction: column;
-  justify-content: space-between; height: 110px;
-  text-align: right; gap: 0;
+  justify-content: space-between; height: 110px; text-align: right;
 }
-.colorbar-side .cb-label {
-  font-size: 10px; color: var(--muted); line-height: 1;
-  display: flex; align-items: center; gap: 5px; justify-content: flex-end;
-}
-.colorbar-side .cb-label .cb-dot {
-  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
-}
-.colorbar-title {
-  position: absolute; bottom: 128px; right: 14px;
-  font-size: 10px; font-weight: 600; color: rgba(228,230,240,.55);
-  letter-spacing: .06em; text-transform: uppercase;
-  pointer-events: none;
-}
+.colorbar-labels span { font-size: 10px; color: var(--muted); line-height: 1; }
 .colorbar-track {
   width: 14px; height: 110px; border-radius: 7px;
   border: 1px solid rgba(255,255,255,.1);
@@ -212,55 +193,60 @@ input[type=file]:hover { border-color: var(--muted); }
     #febd2a 92%,#f0f921 100%);
 }
 
-/* ── Affordance result explanation ── */
-.afford-explain {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 10px; padding: 14px 16px;
-  display: none;
-}
-.afford-explain-label {
-  font-size: 10px; font-weight: 700; letter-spacing: .1em;
-  text-transform: uppercase; color: var(--muted); margin-bottom: 7px;
-}
-.afford-explain-text {
-  font-size: 13px; color: var(--text); line-height: 1.7;
-}
-.afford-explain-text .hi { color: #f0f921; font-weight: 600; }
-.afford-explain-text .lo { color: #9b82f7; font-weight: 600; }
-.afford-explain-meta {
-  margin-top: 10px; padding-top: 10px;
-  border-top: 1px solid var(--border);
-  font-size: 11px; color: var(--muted);
-  display: flex; gap: 20px; flex-wrap: wrap;
-}
-.afford-explain-meta strong { color: var(--text); }
-
 /* ── Comparison ── */
-.cmp-label {
-  font-size: 10px; font-weight: 700; letter-spacing: .1em;
-  text-transform: uppercase; color: var(--muted);
-  margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between;
+.cmp-row {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
 }
-.cmp-label span { font-weight: 400; text-transform: none; letter-spacing: 0; font-size: 11px; }
-
-.cmp-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+.cmp-row-title {
+  font-size: 11px; font-weight: 600; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--muted);
+}
+.cmp-row-sub { font-size: 11px; color: var(--muted); }
+.cmp-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
 .cmp-card {
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: 9px; overflow: hidden;
+  border-radius: 8px; overflow: visible; position: relative;
 }
 .cmp-card.ours { border-color: rgba(124,106,247,.5); }
-.cmp-card canvas { width: 100%; aspect-ratio: 1; display: block; }
+.cmp-card canvas { width: 100%; aspect-ratio: 1; display: block; border-radius: 7px 7px 0 0; }
 .cmp-card-label {
-  padding: 7px 10px; font-size: 11px; color: var(--muted);
-  border-top: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 8px; border-top: 1px solid var(--border); font-size: 11px; color: var(--muted);
+  display: flex; align-items: center; justify-content: space-between; cursor: default;
 }
 .cmp-card.ours .cmp-card-label { color: var(--accent); }
 .cmp-badge {
-  font-size: 9px; background: var(--accent); color: #fff;
-  border-radius: 4px; padding: 1px 5px; font-weight: 600;
+  font-size: 9px; font-weight: 700; background: var(--accent); color: #fff;
+  border-radius: 3px; padding: 1px 5px; letter-spacing: .04em;
 }
+.cmp-info {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--border); color: var(--muted);
+  font-size: 9px; font-weight: 700; line-height: 14px;
+  text-align: center; cursor: help; flex-shrink: 0;
+  position: relative; user-select: none;
+}
+.cmp-info:hover .cmp-tooltip { opacity: 1; pointer-events: auto; }
+.cmp-tooltip {
+  position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+  width: 200px; background: #1e2130; border: 1px solid var(--border);
+  border-radius: 7px; padding: 9px 11px;
+  font-size: 11px; color: var(--muted); line-height: 1.55;
+  opacity: 0; pointer-events: none; transition: opacity .15s; z-index: 10;
+  text-align: left; font-weight: 400;
+}
+.cmp-tooltip strong { color: var(--text); display: block; margin-bottom: 3px; }
+.cmp-tooltip::after {
+  content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+  border: 5px solid transparent; border-top-color: #1e2130;
+}
+.cmp-insight {
+  margin-top: 10px; background: rgba(124,106,247,.07);
+  border: 1px solid rgba(124,106,247,.18); border-radius: 7px;
+  padding: 9px 12px; font-size: 11px; color: var(--muted);
+  line-height: 1.6; display: flex; gap: 8px;
+}
+.cmp-insight-icon { color: var(--accent); font-weight: 700; flex-shrink: 0; }
+.cmp-insight strong { color: var(--text); }
 </style>
 </head>
 <body>
@@ -268,10 +254,10 @@ input[type=file]:hover { border-color: var(--muted); }
 <header>
   <div class="hdr-left">
     <h1>Zero-Shot 3D Affordance Mapping</h1>
-    <p>Geometry-aware &nbsp;·&nbsp; No training required &nbsp;·&nbsp; Evaluated on LASO benchmark</p>
+    <p>Geometry-aware &nbsp;·&nbsp; Evaluated on LASO benchmark</p>
   </div>
   <div class="hdr-links">
-    <a href="https://github.com/YOUR_USERNAME/zeroshot3d-affordance" target="_blank">GitHub</a>
+    <a href="https://github.com/shahtvisha/zeroshot3d-affordance" target="_blank">GitHub</a>
     <a href="/static/portfolio.html">Results</a>
     <a href="/docs" target="_blank">API</a>
   </div>
@@ -355,7 +341,7 @@ input[type=file]:hover { border-color: var(--muted); }
     </div>
   </div>
 
-  <!-- Right: viewer + explanation + comparison -->
+  <!-- Right: viewer + comparison -->
   <div class="right-col">
 
     <div class="viewer-wrap">
@@ -366,57 +352,69 @@ input[type=file]:hover { border-color: var(--muted); }
         <span id="viewer-label">Loading…</span>
       </div>
 
-      <div class="viewer-hint" id="hint">Drag to rotate &nbsp;·&nbsp; Scroll to zoom &nbsp;·&nbsp; Right-drag to pan</div>
+      <div class="viewer-hint" id="hint">Drag to rotate &nbsp;·&nbsp; Scroll to zoom</div>
 
-      <!-- Colorbar with human-readable labels -->
-      <div class="colorbar-title">Affordance score</div>
       <div class="colorbar">
-        <div class="colorbar-side">
-          <div class="cb-label">
-            <span>Best match</span>
-            <div class="cb-dot" style="background:#f0f921;"></div>
-          </div>
-          <div class="cb-label" style="opacity:.5">
-            <span>Moderate</span>
-            <div class="cb-dot" style="background:#db5c68;"></div>
-          </div>
-          <div class="cb-label">
-            <span>No match</span>
-            <div class="cb-dot" style="background:#0d0887;"></div>
-          </div>
+        <div class="colorbar-labels">
+          <span>High</span>
+          <span style="opacity:.55">Mid</span>
+          <span>Low</span>
         </div>
         <div class="colorbar-track"></div>
       </div>
     </div>
 
-    <!-- Plain-English explanation — appears after each run -->
-    <div class="afford-explain" id="afford-explain">
-      <div class="afford-explain-label">What you're seeing</div>
-      <div class="afford-explain-text" id="afford-explain-text"></div>
-      <div class="afford-explain-meta" id="afford-explain-meta"></div>
-    </div>
-
+    <!-- Method comparison — compact cards, hover for explanation -->
     <div>
-      <div class="cmp-label">
-        Method comparison — top-down view
-        <span>Same scene · same query</span>
+      <div class="cmp-row">
+        <span class="cmp-row-title">Method comparison</span>
+        <span class="cmp-row-sub">Top-down · same scene · same query · hover cards for explanation</span>
       </div>
       <div class="cmp-grid">
+
         <div class="cmp-card">
           <canvas id="cmp-clip" width="240" height="240"></canvas>
-          <div class="cmp-card-label">CLIP only</div>
+          <div class="cmp-card-label">
+            CLIP only
+            <div class="cmp-info">?
+              <div class="cmp-tooltip">
+                <strong>CLIP only (baseline)</strong>
+                Lifts 2D patch features into 3D, scores by text similarity. Finds semantically similar-looking regions but ignores surface geometry — a flat table can score as high as a graspable handle.
+              </div>
+            </div>
+          </div>
         </div>
+
         <div class="cmp-card">
           <canvas id="cmp-geo" width="240" height="240"></canvas>
-          <div class="cmp-card-label">Geometry only</div>
+          <div class="cmp-card-label">
+            Geometry only
+            <div class="cmp-info">?
+              <div class="cmp-tooltip">
+                <strong>Geometry only</strong>
+                Scores points by local surface shape — planarity, normal consistency, curvature — matched to the query's physical requirements. No visual or language understanding; misses semantic context.
+              </div>
+            </div>
+          </div>
         </div>
+
         <div class="cmp-card ours">
           <canvas id="cmp-ours" width="240" height="240"></canvas>
           <div class="cmp-card-label">
-            Geometry-aware
-            <span class="cmp-badge">ours</span>
+            Geometry-aware <span class="cmp-badge">ours</span>
+            <div class="cmp-info">?
+              <div class="cmp-tooltip">
+                <strong>Geometry-aware (ours)</strong>
+                Multiplies CLIP and geometry scores. A point must look right AND be shaped right — suppressing CLIP false positives and producing tighter, physically plausible regions. Best IoU on LASO benchmark.
+              </div>
+            </div>
           </div>
         </div>
+
+      </div>
+      <div class="cmp-insight">
+        <span class="cmp-insight-icon">→</span>
+        <span><strong>What to look for:</strong> our method produces a tighter yellow cluster on the correct affordance region. CLIP-only spreads scores broadly; geometry-only can miss the right object entirely.</span>
       </div>
     </div>
 
@@ -428,15 +426,16 @@ const API = '';
 let currentScene = 'mug';
 let currentData  = null;
 
-// ── Viridis colormap ──────────────────────────────────────────────────────────
+// ── Viridis colormap — perceptually uniform, clear low→high ──────────────────
+// Matches the CSS colorbar gradient exactly.
 function viridisColor(t) {
   t = Math.max(0, Math.min(1, t));
   const stops = [
-    [0.267, 0.005, 0.329],
-    [0.283, 0.301, 0.557],
-    [0.128, 0.566, 0.551],
-    [0.478, 0.821, 0.318],
-    [0.993, 0.906, 0.144],
+    [0.267, 0.005, 0.329],  // 0.00 dark purple
+    [0.283, 0.301, 0.557],  // 0.25 blue
+    [0.128, 0.566, 0.551],  // 0.50 teal
+    [0.478, 0.821, 0.318],  // 0.75 green
+    [0.993, 0.906, 0.144],  // 1.00 yellow
   ];
   const s  = t * (stops.length - 1);
   const lo = Math.floor(s), hi = Math.min(lo + 1, stops.length - 1);
@@ -445,13 +444,13 @@ function viridisColor(t) {
   return [a[0]+(b[0]-a[0])*f, a[1]+(b[1]-a[1])*f, a[2]+(b[2]-a[2])*f];
 }
 
-// ── Three.js ──────────────────────────────────────────────────────────────────
+// ── Three.js ─────────────────────────────────────────────────────────────────
 const canvas3d = document.getElementById('canvas3d');
 const renderer = new THREE.WebGLRenderer({ canvas: canvas3d, antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-const scene3 = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(42, 1, 0.001, 100);
+const scene3  = new THREE.Scene();
+const camera  = new THREE.PerspectiveCamera(42, 1, 0.001, 100);
 scene3.add(new THREE.AmbientLight(0xffffff, 0.5));
 const dLight = new THREE.DirectionalLight(0xffffff, 0.6);
 dLight.position.set(1, 2, 1.5);
@@ -480,57 +479,40 @@ new ResizeObserver(resizeRenderer).observe(canvas3d);
   renderer.render(scene3, camera);
 })();
 
-// ── Orbit controls ────────────────────────────────────────────────────────────
-let dragging = false, lastMouse = { x: 0, y: 0 };
+// ── Orbit ────────────────────────────────────────────────────────────────────
+let dragging = false, lastMouse = {x:0,y:0};
 
 canvas3d.addEventListener('mousedown', e => {
-  dragging = true; lastMouse = { x: e.clientX, y: e.clientY }; dismissHint();
+  dragging=true; lastMouse={x:e.clientX,y:e.clientY}; dismissHint();
 });
-window.addEventListener('mouseup', () => dragging = false);
+window.addEventListener('mouseup', () => dragging=false);
 canvas3d.addEventListener('mousemove', e => {
   if (!dragging) return;
   sph.theta -= (e.clientX - lastMouse.x) * 0.007;
-  sph.phi    = Math.max(0.1, Math.min(Math.PI - 0.1, sph.phi + (e.clientY - lastMouse.y) * 0.007));
-  lastMouse  = { x: e.clientX, y: e.clientY };
+  sph.phi    = Math.max(0.1, Math.min(Math.PI-0.1, sph.phi + (e.clientY - lastMouse.y) * 0.007));
+  lastMouse  = {x:e.clientX, y:e.clientY};
 });
-
-// KEY FIX: passive:false + preventDefault stops Safari from interpreting
-// the scroll as a swipe between tabs or triggering overscroll navigation.
 canvas3d.addEventListener('wheel', e => {
   e.preventDefault();
-  e.stopPropagation();
-  sph.r = Math.max(0.4, Math.min(4, sph.r + e.deltaY * 0.0008));
-}, { passive: false });
+  sph.r = Math.max(0.5, Math.min(3.0, sph.r + e.deltaY * 0.001));
+}, {passive:false});
 
-let lTouch = null, lastPinchDist = null;
-canvas3d.addEventListener('touchstart', e => {
-  lTouch = e.touches[0]; lastPinchDist = null; dismissHint();
-  e.preventDefault();
-}, { passive: false });
-canvas3d.addEventListener('touchmove', e => {
-  e.preventDefault();
-  if (e.touches.length === 2) {
-    const d = Math.hypot(
-      e.touches[0].clientX - e.touches[1].clientX,
-      e.touches[0].clientY - e.touches[1].clientY
-    );
-    if (lastPinchDist !== null) sph.r = Math.max(0.4, Math.min(4, sph.r - (d - lastPinchDist) * 0.005));
-    lastPinchDist = d;
-    lTouch = null;
-  } else if (lTouch && e.touches.length === 1) {
-    sph.theta -= (e.touches[0].clientX - lTouch.clientX) * 0.01;
-    sph.phi    = Math.max(0.1, Math.min(Math.PI - 0.1, sph.phi + (e.touches[0].clientY - lTouch.clientY) * 0.01));
-    lTouch = e.touches[0];
-  }
-}, { passive: false });
+let lTouch = null;
+canvas3d.addEventListener('touchstart', e => { lTouch=e.touches[0]; dismissHint(); });
+canvas3d.addEventListener('touchmove',  e => {
+  if (!lTouch) return;
+  sph.theta -= (e.touches[0].clientX - lTouch.clientX) * 0.01;
+  sph.phi    = Math.max(0.1, Math.min(Math.PI-0.1, sph.phi + (e.touches[0].clientY - lTouch.clientY) * 0.01));
+  lTouch = e.touches[0];
+}, {passive:true});
 
-// ── Hint ──────────────────────────────────────────────────────────────────────
+// ── Hint ─────────────────────────────────────────────────────────────────────
 const hintEl = document.getElementById('hint');
 let hintTimer = null;
-function showHint()    { hintEl.style.opacity = '1'; clearTimeout(hintTimer); hintTimer = setTimeout(dismissHint, 3000); }
-function dismissHint() { hintEl.style.opacity = '0'; }
+function showHint() { hintEl.style.opacity='1'; clearTimeout(hintTimer); hintTimer=setTimeout(dismissHint,2800); }
+function dismissHint() { hintEl.style.opacity='0'; }
 
-// ── Build 3D point cloud ──────────────────────────────────────────────────────
+// ── Build 3D point cloud ─────────────────────────────────────────────────────
 function buildCloud(pts, cols, scores) {
   if (cloud) scene3.remove(cloud);
 
@@ -538,30 +520,30 @@ function buildCloud(pts, cols, scores) {
   const pos = new Float32Array(N * 3);
   const col = new Float32Array(N * 3);
 
-  let cx = 0, cy = 0, cz = 0;
-  for (let i = 0; i < N; i++) { cx += pts[i][0]; cy += pts[i][1]; cz += pts[i][2]; }
-  cx /= N; cy /= N; cz /= N;
+  let cx=0, cy=0, cz=0;
+  for (let i=0; i<N; i++) { cx+=pts[i][0]; cy+=pts[i][1]; cz+=pts[i][2]; }
+  cx/=N; cy/=N; cz/=N;
 
   let maxD = 0;
-  for (let i = 0; i < N; i++) {
-    const d = Math.sqrt((pts[i][0]-cx)**2 + (pts[i][1]-cy)**2 + (pts[i][2]-cz)**2);
+  for (let i=0; i<N; i++) {
+    const d = Math.sqrt((pts[i][0]-cx)**2+(pts[i][1]-cy)**2+(pts[i][2]-cz)**2);
     if (d > maxD) maxD = d;
   }
-  const sc = maxD > 0 ? 0.85 / maxD : 1;
+  const sc = maxD > 0 ? 0.85/maxD : 1;
 
-  for (let i = 0; i < N; i++) {
-    pos[i*3]   = (pts[i][0] - cx) * sc;
-    pos[i*3+1] = (pts[i][1] - cy) * sc;
-    pos[i*3+2] = (pts[i][2] - cz) * sc;
-    const [r, g, b] = scores ? viridisColor(scores[i]) : [cols[i][0], cols[i][1], cols[i][2]];
-    col[i*3] = r; col[i*3+1] = g; col[i*3+2] = b;
+  for (let i=0; i<N; i++) {
+    pos[i*3]   = (pts[i][0]-cx)*sc;
+    pos[i*3+1] = (pts[i][1]-cy)*sc;
+    pos[i*3+2] = (pts[i][2]-cz)*sc;
+    const [r,g,b] = scores ? viridisColor(scores[i]) : [cols[i][0],cols[i][1],cols[i][2]];
+    col[i*3]=r; col[i*3+1]=g; col[i*3+2]=b;
   }
 
   const geom = new THREE.BufferGeometry();
   geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   geom.setAttribute('color',    new THREE.BufferAttribute(col, 3));
 
-  const ptSize = Math.max(0.016, Math.min(0.034, 180 / N));
+  const ptSize = Math.max(0.016, Math.min(0.034, 180/N));
   cloud = new THREE.Points(geom, new THREE.PointsMaterial({
     size: ptSize, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 0.93,
   }));
@@ -578,19 +560,21 @@ function render2D(canvasEl, pts, scores) {
   if (!pts || !scores) return;
 
   const pad = 10;
-  let xmin = Infinity, xmax = -Infinity, zmin = Infinity, zmax = -Infinity;
+  let xmin=Infinity, xmax=-Infinity, zmin=Infinity, zmax=-Infinity;
   for (const p of pts) {
-    if (p[0] < xmin) xmin = p[0]; if (p[0] > xmax) xmax = p[0];
-    if (p[2] < zmin) zmin = p[2]; if (p[2] > zmax) zmax = p[2];
+    if (p[0]<xmin) xmin=p[0]; if (p[0]>xmax) xmax=p[0];
+    if (p[2]<zmin) zmin=p[2]; if (p[2]>zmax) zmax=p[2];
   }
-  const xr = xmax - xmin || 1, zr = zmax - zmin || 1;
-  const order = pts.map((_, i) => i).sort((a, b) => scores[a] - scores[b]);
+  const xr = xmax-xmin||1, zr = zmax-zmin||1;
+
+  // Draw low-score points first, high-score on top
+  const order = pts.map((_,i)=>i).sort((a,b)=>scores[a]-scores[b]);
 
   for (const i of order) {
-    const px = pad + (pts[i][0] - xmin) / xr * (W - pad*2);
-    const pz = pad + (pts[i][2] - zmin) / zr * (H - pad*2);
-    const [r, g, b] = viridisColor(scores[i]);
-    const size = 1.2 + scores[i] * 2.5;
+    const px = pad + (pts[i][0]-xmin)/xr * (W-pad*2);
+    const pz = pad + (pts[i][2]-zmin)/zr * (H-pad*2);
+    const [r,g,b] = viridisColor(scores[i]);
+    const size = 1.2 + scores[i] * 2.5;  // larger = higher affordance
     ctx.fillStyle = `rgb(${(r*255)|0},${(g*255)|0},${(b*255)|0})`;
     ctx.beginPath();
     ctx.arc(px, pz, size, 0, Math.PI*2);
@@ -598,57 +582,19 @@ function render2D(canvasEl, pts, scores) {
   }
 }
 
-// ── Per-affordance plain-English explanations ─────────────────────────────────
-const AFFORD_TEXT = {
-  grasp:
-    'The <span class="hi">bright yellow/green points</span> are where a gripper or hand can best pick up the object — typically narrow sections, handles, or regions with good surface curvature for finger contact. <span class="lo">Dark points</span> are flat, wide, or otherwise unsuitable for grasping.',
-  support:
-    'The <span class="hi">bright points</span> mark flat horizontal surfaces that can stably support other objects placed on top. <span class="lo">Dark points</span> are angled, convex, or concave regions that can\'t reliably hold anything.',
-  contain:
-    'The <span class="hi">bright points</span> highlight the interior cavity — the concave hollow designed to hold objects or liquids inside. <span class="lo">Dark points</span> are exterior surfaces.',
-  'wrap-grasp':
-    'The <span class="hi">bright points</span> identify cylindrical or rod-like sections sized for a full closed-fist grip. <span class="lo">Dark points</span> are too wide, too flat, or irregular for wrapping a hand around.',
-  open:
-    'The <span class="hi">bright points</span> locate handles, knobs, or edges you would grip to open the object — surfaces that afford pulling, rotating, or lifting. <span class="lo">Dark points</span> are non-operable body surfaces.',
-  pour:
-    'The <span class="hi">bright points</span> indicate the spout, lip, or narrow opening through which liquid can be directed when tilting. <span class="lo">Dark points</span> are base or body regions.',
-  move:
-    'The <span class="hi">bright points</span> show stable push/pull surfaces for translating the whole object across a surface. <span class="lo">Dark points</span> are fragile, concave, or impractical for pushing.',
-  sit:
-    'The <span class="hi">bright points</span> mark the seat surface — broad, flat areas designed to support a person\'s weight comfortably. <span class="lo">Dark points</span> are legs, backrests, or sharp edges.',
-};
-
-// ── Status + metrics + explanation ───────────────────────────────────────────
-function setStatus(msg, cls = '') {
+// ── Status + metrics ──────────────────────────────────────────────────────────
+function setStatus(msg, cls='') {
   const el = document.getElementById('status');
   el.textContent = msg; el.className = cls;
 }
-
 function updateMetrics(data) {
   document.getElementById('m-npoints').textContent = data.n_points?.toLocaleString() ?? '—';
-  document.getElementById('m-ntop').textContent    = data.n_top?.toLocaleString()    ?? '—';
-  document.getElementById('m-elapsed').textContent = data.elapsed_s != null ? data.elapsed_s + 's' : '—';
+  document.getElementById('m-ntop').textContent    = data.n_top?.toLocaleString() ?? '—';
+  document.getElementById('m-elapsed').textContent = data.elapsed_s != null ? data.elapsed_s+'s' : '—';
 }
-
-function showExplanation(data) {
-  const aff  = data.affordance;
-  const pct  = data.n_points > 0 ? ((data.n_top / data.n_points) * 100).toFixed(1) : '0.0';
-  const ml   = { clip_only: 'CLIP only', geometry_only: 'Geometry only', geometry_aware: 'Geometry-aware' };
-
-  document.getElementById('afford-explain-text').innerHTML =
-    AFFORD_TEXT[aff] ?? `<span class="hi">Bright points</span> = high affordance score for "${aff}". <span class="lo">Dark points</span> = low score.`;
-
-  document.getElementById('afford-explain-meta').innerHTML =
-    `<span><strong>${data.n_top?.toLocaleString()}</strong> of <strong>${data.n_points?.toLocaleString()}</strong> points above threshold (${pct}%)</span>`
-  + `<span>Method: <strong>${ml[data.method] ?? data.method}</strong></span>`
-  + `<span>Inference: <strong>${data.elapsed_s}s</strong></span>`;
-
-  document.getElementById('afford-explain').style.display = 'block';
-}
-
 function setLabel(sc, aff, meth) {
-  const ml = { clip_only: 'CLIP only', geometry_only: 'Geometry only', geometry_aware: 'Geometry-aware' };
-  document.getElementById('viewer-label').textContent = `${sc} · ${aff} · ${ml[meth] || meth}`;
+  const ml = {clip_only:'CLIP only', geometry_only:'Geometry only', geometry_aware:'Geometry-aware'};
+  document.getElementById('viewer-label').textContent = `${sc} · ${aff} · ${ml[meth]||meth}`;
 }
 
 // ── API ───────────────────────────────────────────────────────────────────────
@@ -663,7 +609,6 @@ async function runScene(sc, aff, meth) {
     currentData = data;
     buildCloud(data.points, data.colors, data.scores);
     updateMetrics(data);
-    showExplanation(data);
     setStatus(`Done — ${data.n_points.toLocaleString()} points`, 'ok');
     showHint();
     fetchComparison(sc, aff);
@@ -694,13 +639,12 @@ async function runUpload(file, aff, meth) {
   form.append('method', meth);
   form.append('max_points', '3000');
   try {
-    const res  = await fetch(`${API}/api/score`, { method: 'POST', body: form });
+    const res  = await fetch(`${API}/api/score`, {method:'POST', body:form});
     if (!res.ok) throw new Error(await res.text());
     const data = await res.json();
     currentData = data;
     buildCloud(data.points, data.colors, data.scores);
     updateMetrics(data);
-    showExplanation(data);
     setStatus(`Done — ${data.n_points.toLocaleString()} points`, 'ok');
     showHint();
   } catch(e) {
