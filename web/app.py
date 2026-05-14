@@ -73,7 +73,7 @@ SCANNET_DIR = Path(os.environ.get("SCANNET_DIR", ROOT / "data" / "scannet" / "sc
 # Each scene has its own seed and object count so selecting "Mug" shows
 # a single mug, "Chair" shows a single chair, etc.
 SCENE_CONFIG = {
-    "mug":    {"seed": 0,  "n_objects": 1},
+    # "mug":    {"seed": 0,  "n_objects": 1},
     "chair":  {"seed": 10, "n_objects": 1},
     "bottle": {"seed": 20, "n_objects": 1},
     "table":  {"seed": 30, "n_objects": 1},
